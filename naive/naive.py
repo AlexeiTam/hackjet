@@ -16,7 +16,44 @@ import uproot
 import pandas as pd
 
 
-#Jet reader: use uproot to make output files and read them
+#important phi-related functions,
+# to wrap phi in the [0,2pi) range and take differences of phi accounting for 2*pi-periodicity
+
+pi = np.pi
+two_pi = 2*pi
+
+def wrap_phi(phi):
+  """
+  Wrap phi azimuthal angle to the range [0, 2*pi).
+
+  Parameters:
+      phi (float): The input angle in radians.
+
+  Returns:
+      float: The wrapped angle in radians.
+  """
+  return phi % (2 * pi)
+
+def delta_phi(phi1,phi2):
+  """
+  Calculate the difference between two azimuthal angles (phi1, phi2) in radians,
+  accounting for the 2*pi periodicity.
+
+  Parameters:
+      phi1 (float): The first angle in radians.
+      phi2 (float): The second angle in radians.
+
+  Returns:
+      float: The difference between the two angles in radians.
+  """
+  phi1 = wrap_phi(phi1)
+  phi2 = wrap_phi(phi2)
+  dphi = phi1 - phi2
+  conditionlist = [dphi < -1.0*np.pi, dphi > np.pi]
+  choicelist = [np.abs(dphi + 2*np.pi), np.abs(dphi - 2*np.pi)]
+  dphi = np.select(conditionlist, choicelist, default=np.abs(dphi))
+  return dphi
+
 
 #custom class for jets:
 class MJet:
@@ -51,7 +88,7 @@ class MJet:
     self.pT = float(np.sqrt(px**2 + py**2))
     self.p = float(np.sqrt(px**2 + py**2 + pz**2))
 
-    self.phi = float(np.arctan2(self.py, self.px))
+    self.phi = wrap_phi(float(np.arctan2(self.py, self.px)))
 
     # Calculate mass, add tolerance (1e-6)for floating point issues
     m_squared = self.E**2 - self.p**2
@@ -153,7 +190,7 @@ def d_ij(mode, j1, j2, R_0, epsilon=1e-6):
 
   min_pT_sq = min( pT1_sq , pT2_sq )
 
-  delta_R_sq = (j1.y - j2.y)**2 + (j1.phi - j2.phi)**2
+  delta_R_sq = (j1.y - j2.y)**2 + (delta_phi(j1.phi,j2.phi))**2
 
   output = min_pT_sq * (delta_R_sq / (R_0**2))
 
@@ -265,6 +302,7 @@ def gen_clustering(mode, j_initial, R_0, thresholding=False, pT_threshold=0.0, e
   else:
     return clustering_history, final_jets
 
+#Jet reader: use uproot to make output files and read them
 # functions for reading and writing: ROOT files <-> naive.MJets or other objects made from 4-momenta
 
 
