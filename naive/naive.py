@@ -185,8 +185,8 @@ def d_ij(mode, j1, j2, R_0, epsilon=1e-6):
       float: The distance between the jets.
   """
 
-  pT1_sq = j1.pT**2
-  pT2_sq = j2.pT**2
+  pT1_sq = (j1.pT)**(2*mode)
+  pT2_sq = (j2.pT)**(2*mode)
 
   min_pT_sq = min( pT1_sq , pT2_sq )
 
