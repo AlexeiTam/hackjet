@@ -267,8 +267,10 @@ def gen_clustering(mode, j_initial, R_0, thresholding=False, pT_threshold=0.0, e
 
     if type_min == 'beam':
       j_candidate = active.pop(indices_min[0])
-      final_jets.append(j_candidate)
-      clustering_history.append(('final',j_candidate.id))
+      # final_jets.append(j_candidate)
+      # clustering_history.append(('final',j_candidate.id))   #OLD VERSION: reverses the ordering of the fastjet implementation
+      final_jets = [j_candidate] + final_jets
+      clustering_history = [('final',j_candidate.id)] + clustering_history
 
     elif type_min == 'pairwise':
       idx1, idx2 = sorted(indices_min, reverse=True)
@@ -288,9 +290,105 @@ def gen_clustering(mode, j_initial, R_0, thresholding=False, pT_threshold=0.0, e
       # Assuming eta_threshold is a maximum absolute eta value
       if jet.pT >= pT_threshold and abs(jet.eta) <= eta_threshold:
         filtered_final_jets.append(jet)
+    filtered_final_jets = sorted(filtered_final_jets, key=lambda x: x.pT, reverse=True) #final sorting in descending pt
     return filtered_final_jets
   else:
+    final_jets = sorted(final_jets, key=lambda x: x.pT, reverse=True) #final sorting in descending pt
     return clustering_history, final_jets
+
+
+
+# SIFT
+# makes use of a very different distanc metric
+
+def d_ij_SIFT(j1, j2):
+  """
+  SIFT (Scale-Invariant Filtered Tree) distance metric between two jets,
+  |m_i^2 - m_j^2| / ((E_T^i)^2 + (E_T^j)^2)
+  with E_T^2 = E^2 - p_z^2.
+
+  Parameters:
+      j1 (MJet): The first jet.
+      j2 (MJet): The second jet.
+
+  Returns:
+      float: The distance between the jets.
+  """
+
+  m_i_squared = j1.m**2
+  m_j_squared = j2.m**2
+
+  E_T_i_squared = j1.E**2 - j1.pz**2
+  E_T_j_squared = j2.E**2 - j2.pz**2
+
+  num = abs(m_i_squared - m_j_squared)
+  denom = E_T_i_squared + E_T_j_squared
+
+  output = num/denom
+
+
+  return output
+
+
+#defining SIFT clustering function
+#based heavily on general clustering function above
+
+# future: incorporating clustering, drop, isolate conditions
+# otherwise, we begin with just a version that brings everything to one big jet
+
+def SIFT(j_initial,thresholding=False, pT_threshold=0.0, eta_threshold=0.0):
+
+  active = list(j_initial)
+  final_jets = []
+
+  clustering_history = []
+
+  #main loop
+  while active:
+
+    #if only one jet remaining:
+
+    if len(active) == 1:
+      final_jets.append(active.pop(0))
+      break
+
+    #initializing minimum distance variables
+    d_min = float('inf')
+    indices_min = None
+
+    for i, j_i in enumerate(active):
+
+      for j in range(i+1, len(active)):
+
+        dij = d_ij_SIFT(j_i, active[j])
+
+        if dij < d_min:
+          d_min = dij
+          indices_min = (i, j)
+
+    if indices_min is not None:
+      idx1, idx2 = sorted(indices_min, reverse=True)
+      j_i = active.pop(idx1)
+      j_j = active.pop(idx2)
+
+      active.append(j_i + j_j)
+      clustering_history.append(('merge', (j_i.id, "----", j_j.id)))
+    else:
+      raise ValueError("No valid clustering found.")
+
+  if thresholding:
+    filtered_final_jets = []
+    for jet in final_jets:
+      if jet.pT >= pT_threshold and abs(jet.eta) <= eta_threshold:
+        filtered_final_jets.append(jet)
+
+    filtered_final_jets = sorted(filtered_final_jets, key=lambda x: x.pT, reverse=True)
+    return clustering_history, filtered_final_jets
+  else:
+    return clustering_history, final_jets
+
+
+
 
 #Jet reader: use uproot to make output files and read them
 # functions for reading and writing: ROOT files <-> naive.MJets or other objects made from 4-momenta
