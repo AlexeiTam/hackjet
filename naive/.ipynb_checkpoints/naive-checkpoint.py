@@ -372,7 +372,7 @@ def GhostJetPopulator(jet_input, y_min, y_max, ny, phi_min, phi_max, nphi, epsil
 def d_ij_SIFT(j1, j2):
   """
   SIFT (Scale-Invariant Filtered Tree) distance metric between two jets,
-  (2* p^{\mu}_i * p_{\mu}_j) / ((E_T^i)^2 + (E_T^j)^2)
+  (2* p^{mu}_i * p_{mu}_j) / ((E_T^i)^2 + (E_T^j)^2)
   with E_T^2 = E^2 - p_z^2.
 
   Parameters:
