@@ -399,8 +399,35 @@ def d_ij_SIFT(j1, j2):
 #defining SIFT clustering function
 #based heavily on general clustering function above
 
-# future: incorporating clustering, drop, isolate conditions
-# otherwise, we begin with just a version that brings everything to one big jet
+
+# incorporating epsilon parameter to be able to cluster, drop, isolate as described in original SIFT paper:
+
+def epsil_param(jet1, jet2):
+  """
+  A function to take pair of naive.MJets (A, B), and calculates the epsilon parameter between them,
+  defined as:
+
+  epsil_param = (E_T^A * E_T^B) / (E_T^A**2 + E_T^B**2),
+  and returns an integer, depending on what action SIFT algorithm must take:
+    0: Cluster -- combine both MJets
+    1: Drop -- remove soft jet, return hard jet to active pool
+    2: Isolate -- promote both jets to final state
+  """
+
+  E_T_A = float(np.sqrt((jet1.pT)**2 + (jet1.m)**2))
+  E_T_B = float(np.sqrt((jet2.pT)**2 + (jet2.m)**2))
+
+  out_epsil = (E_T_A*E_T_B)/( (E_T_A)**2 + (E_T_B)**2)  #the actual epsilon_AB value as defined in paper
+  out_epsil = (2*out_epsil)**2 #the value that will be compared to determine cluster, drop, isolate conditions
+  
+  d_AB = d_ij_SIFT(jet1, jet2)
+
+  if d_AB >= 1: #isolate--promote to final state
+    return 2
+  elif d_AB >= out_epsil: #drop
+    return 1
+  else: #last remaining option: cluster
+    return 0
 
 def SIFT(j_initial,thresholding=False, pT_threshold=0.0, eta_threshold=0.0):
 
@@ -432,15 +459,41 @@ def SIFT(j_initial,thresholding=False, pT_threshold=0.0, eta_threshold=0.0):
           d_min = dij
           indices_min = (i, j)
 
-    if indices_min is not None:
-      idx1, idx2 = sorted(indices_min, reverse=True)
-      j_i = active.pop(idx1)
-      j_j = active.pop(idx2)
+    #old implementation: clustering until only one jet left; no stopping condition
+    # if indices_min is not None:
+    #   idx1, idx2 = sorted(indices_min, reverse=True)
+    #   j_i = active.pop(idx1)
+    #   j_j = active.pop(idx2)
 
-      active.append(j_i + j_j)
-      clustering_history.append(('merge', (j_i.id, j_j.id)))
-    else:
-      raise ValueError("No valid clustering found.")
+    #   active.append(j_i + j_j)
+    #   clustering_history.append(('merge', (j_i.id, j_j.id)))
+    # else:
+    #   raise ValueError("No valid clustering found.")
+
+    #will consider two jet candidates for clustering, dropping, or isolating
+    idx1, idx2 = sorted(indices_min, reverse=True)
+    j_1 = active[idx1]
+    j_2 = active[idx2]
+
+    cdi_condition = epsil_param(j_1, j_2)
+
+    if cdi_condition == 2:
+      #isolate: promote both to final state
+      active.pop(idx1)
+      active.pop(idx2)
+      final_jets.append(j_1)
+      final_jets.append(j_2)
+    elif cdi_condition == 1:
+      #drop the softest jet by pT, keep harder jet in the active pool
+      if j_1.pT >= j_2.pT:
+        active.pop(idx1)
+      else:
+        active.pop(idx2)
+    elif cdi_condition == 0:
+      #cluster: combine both jets and add result to active pool
+      active.pop(idx1)
+      active.pop(idx2)
+      active.append(j_1+j_2)
 
   if thresholding:
     filtered_final_jets = []
