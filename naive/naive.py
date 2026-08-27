@@ -84,7 +84,8 @@ class MJet:
     self.phi = wrap_phi(float(np.arctan2(self.py, self.px)))
 
     # Calculate mass, add tolerance (1e-6)for floating point issues
-    m_squared = self.E**2 - self.p**2
+    # m_squared = self.E**2 - self.p**2
+    m_squared = max(0, self.E**2 - self.p**2)
     if m_squared < 0 and np.isclose(m_squared, 0, atol=1e-6): # Treat small negative as zero
         self.m = 0.0
     else:
