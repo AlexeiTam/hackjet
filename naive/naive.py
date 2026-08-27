@@ -384,6 +384,8 @@ def d_ij_SIFT(j1, j2):
   """
 
   dm = ( (j1.E)*(j2.E) ) - ( (j1.px)*(j2.px) ) - ( (j1.py)*(j2.py) ) - ( (j1.pz)*(j2.pz))
+  
+  dm = 2*dm
 
   E_T_i_squared = j1.E**2 - j1.pz**2
   E_T_j_squared = j2.E**2 - j2.pz**2
@@ -424,7 +426,7 @@ def epsil_param(jet1, jet2):
 
   if d_AB >= 1: #isolate--promote to final state
     return 2
-  elif d_AB >= out_epsil: #drop
+  elif d_AB > out_epsil: #drop
     return 1
   else: #last remaining option: cluster
     return 0
@@ -484,11 +486,16 @@ def SIFT(j_initial,thresholding=False, pT_threshold=0.0, eta_threshold=0.0):
       final_jets.append(j_1)
       final_jets.append(j_2)
     elif cdi_condition == 1:
-      #drop the softest jet by pT, keep harder jet in the active pool
-      if j_1.pT >= j_2.pT:
-        active.pop(idx1)
-      else:
+      #drop the softest jet by E_T, keep harder jet in the active pool
+      
+      ET1 = (j_1.E)**2 - (j_1.pz)**2
+      ET2 = (j_2.E)**2 - (j_2.pz)**2
+      
+      if ET1 >= ET2:
         active.pop(idx2)
+      else:
+        active.pop(idx1)
+
     elif cdi_condition == 0:
       #cluster: combine both jets and add result to active pool
       active.pop(idx1)
