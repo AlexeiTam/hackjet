@@ -1,0 +1,19 @@
+
+# TIME: 2026-07-14 16:20:27 (-0500)
+# HOST: AlexeiTamLaptop
+# PATH: /home/atam/playgrounds/SIFT-AEACuS
+# CALL: ./aeacus.pl
+# ARG1: --crd=test
+# ARG2: --fil=test.lhco
+# ARG3: --xsc=1.0
+# CARD: ./Cards/test.dat
+# FROM: ./Events/test.lhco
+# FILE: ./Cuts/test_001.cut
+
+NNN KEY_NNN EPW_NNN ENW_NNN EZW_NNN      XPB_NNN      ABS_NNN      ERR_NNN      IPB_NNN      EFF_NNN      PRD_NNN
+000 CHN_000       1       0       0 +1.00000E+00 +1.00000E+00        UNDEF +1.00000E+00 1.0000000000 1.0000000000
+001 JET_000       1       0       0 +1.00000E+00 +1.00000E+00        UNDEF +1.00000E+00 1.0000000000 1.0000000000
+
+EID_000 JET_000      CAL_000      IET_000      MET_000      MHT_000      MEF_000      WGT_000
+0000001       1 +2.00000E+01 +2.00000E+01 +1.00000E+02 +1.00000E+02 +2.00000E+02 +1.00000E+00
+
