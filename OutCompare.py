@@ -109,7 +109,7 @@ plt.xlabel("Percent Difference")
 plt.ylabel("Frequency")
 
 plt.tight_layout()
-plt.savefig("E_percent_gap.pdf", format='pdf')
+plt.savefig("E_percent_gap.png", format='png')
 plt.close()
 
 plt.hist(px_percentgap, bins=10)
@@ -118,7 +118,7 @@ plt.xlabel("Percent Difference")
 plt.ylabel("Frequency")
 
 plt.tight_layout()
-plt.savefig("px_percent_gap.pdf", format='pdf')
+plt.savefig("px_percent_gap.png", format='png')
 plt.close()
 
 plt.hist(py_percentgap, bins=10)
@@ -127,7 +127,7 @@ plt.xlabel("Percent Difference")
 plt.ylabel("Frequency")
 
 plt.tight_layout()
-plt.savefig("py_percent_gap.pdf", format='pdf')
+plt.savefig("py_percent_gap.png", format='png')
 plt.close()
 
 plt.hist(pz_percentgap, bins=10)
@@ -136,7 +136,7 @@ plt.xlabel("Percent Difference")
 plt.ylabel("Frequency")
 
 plt.tight_layout()
-plt.savefig("pz_percent_gap.pdf", format='pdf')
+plt.savefig("pz_percent_gap.png", format='png')
 plt.close()
 
 
