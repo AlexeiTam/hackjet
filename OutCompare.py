@@ -82,10 +82,10 @@ def percent_gap(j_1, j_2):
   dpy = j_1.py - j_2.py
   dpz = j_1.pz - j_2.pz
 
-  dE_percent = (dE/(j_1.E))*100
-  dpx_percent = (dpx/(j_1.px))*100
-  dpy_percent = (dpy/(j_1.py))*100
-  dpz_percent = (dpz/(j_1.pz))*100
+  dE_percent = dE
+  dpx_percent = dpx
+  dpy_percent = dpy
+  dpz_percent = dpz
 
   return [float(dE_percent), float(dpx_percent), float(dpy_percent), float(dpz_percent)]
 
@@ -104,8 +104,8 @@ py_percentgap = [p[2] for p in percent_gap_matrix]
 pz_percentgap = [p[3] for p in percent_gap_matrix]
 
 plt.hist(E_percentgap, bins=10)
-plt.title("E Percent Gap")
-plt.xlabel("Percent Difference")
+plt.title("E Gap")
+plt.xlabel("dE [GeV]")
 plt.ylabel("Frequency")
 
 plt.tight_layout()
@@ -113,8 +113,8 @@ plt.savefig("E_percent_gap.png", format='png')
 plt.close()
 
 plt.hist(px_percentgap, bins=10)
-plt.title("$P_x$ Percent Gap")
-plt.xlabel("Percent Difference")
+plt.title("$P_x$ Gap")
+plt.xlabel("dp_x [GeV]")
 plt.ylabel("Frequency")
 
 plt.tight_layout()
@@ -122,8 +122,8 @@ plt.savefig("px_percent_gap.png", format='png')
 plt.close()
 
 plt.hist(py_percentgap, bins=10)
-plt.title("$P_y$ Percent Gap")
-plt.xlabel("Percent Difference")
+plt.title("$P_y$ Gap")
+plt.xlabel("dp_y [GeV]")
 plt.ylabel("Frequency")
 
 plt.tight_layout()
@@ -132,7 +132,7 @@ plt.close()
 
 plt.hist(pz_percentgap, bins=10)
 plt.title("$P_z$ Percent Gap")
-plt.xlabel("Percent Difference")
+plt.xlabel("dp_z [GeV]")
 plt.ylabel("Frequency")
 
 plt.tight_layout()
