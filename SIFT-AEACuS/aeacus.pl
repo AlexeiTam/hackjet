@@ -336,15 +336,16 @@ sub ANALYSIS_CODE { my ($crd,@k,@i,@g,@c,%i,%g) = (shift); do { my ($h,$t,@t) = 
 		# h:header, l:variable list, p:post-object, k:key, c:code, f:format, a:start, z: end, i:index, d:pad, e:card, b:tabulate, g:flow group, o:extra outputs
 	map { my ($h,$l,$p) = ( @$_[0,1], !( ${{ obj => 1 }}{ $$_[0] } )); [ $h => [ map { my ($k,$c,$f,$a,$z) = @$_; map { my ($i) = $_; map { my ($d,$e,$b,$g) =
 		( 0, $_, (( &MATCH_VALUE( $$_{cut}, (undef))) ? ( !!(($p) && ( &OUTPUT_VALUE( $$_{out} ))), (undef)) : ((1), (0+ &BOUNDED( [0,SMX], ( int ${$$_{flw}||[]}[0] ))))));
-		my (@o) = (($p) ? ( &OUTPUT_EXTRA( $k, $i, $_ )) : (( map { $d = (0+ @$_); (@$_) } [ &OUTPUT_PAD( $k, $i, ${$$_{pad}||[]}[0] ) ] ), ( &OUTPUT_OBJECT( $$_{out} ))));
+		my (@o) = (($p) ? ( &OUTPUT_EXTRA( $k, $i, $_ )) : (( map { $d = (0+ @$_); (@$_) } [ &OUTPUT_PAD( $k, $i, ${$$_{pad}||[]}[0] ) ] ), ( &OUTPUT_CIX( $k, $i, $_ )), ( &OUTPUT_OBJECT( $$_{out} )))); # PATCH (CIX)
 			# r:extra mode, s:category sort, q:output key, j:output index, x:lookup code/hash/index, n:object index, t:extra format, u:extra output, w:wide, f:format
  		# note: replacing all decimal outputs with wide format scientific notation ... old version used: ( 0+(0..4)[( $t or $f )] )
  		map { my ($r,$s,$q,$j,$x,$n,$t,$u) = ( !!($_), @{$_||[]} ); my ($w,$f) = ( map {((((!1)x(4)),1)[$_], $_ )} ( 0+(0,1,4,4,4)[( $t or $f )] ));
 				# [ category (leading sort), key, index (sub-leading sort), tabulate/wide, cut/flow, code ]
 			[ 0+($s), (($r) ? ( $q, $j, (($u) ? ($w) : (undef)), (undef)) : ( $k, $i, (($b) ? ($w) : (undef)), $g )), ( sub { my ($o,$v) = (shift,shift);
 				# Inputs are o:objects and v:values; return [ format, value ] for non-failing outputs
-			( return ((defined) ? [ q().(( q( )x(7)), q(%7.1d), q(%7.1f), q(%7.3f), q(%+12.5e))[ (($f) or (((($_) == (int)) and (($_) < (10**(+7)))) ? (1) :
-				((abs) >= (10**(+3))) ? (2) : (3))) ], 0+($_) ] : [ (($w) ? ( q( )x(5)) : q()).q(  UNDEF), (undef) ] )) for
+			( return ((defined) ? (( ref eq q(ARRAY)) ? [ q(%s), ( join q(,), ( @$_ )) ] : # PATCH (CIX): list values print as one comma-joined token
+				[ q().(( q( )x(7)), q(%7.1d), q(%7.1f), q(%7.3f), q(%+12.5e))[ (($f) or (((($_) == (int)) and (($_) < (10**(+7)))) ? (1) :
+				((abs) >= (10**(+3))) ? (2) : (3))) ], 0+($_) ]) : [ (($w) ? ( q( )x(5)) : q()).q(  UNDEF), (undef) ] )) for
 				# For extra mode recover the indicated object from o, access the indicated key or lookup value, store the result in v, and pass it through if tabulating
 			(($r) ? ( grep {(($u) or (return))} (($$v{$q}[$j]) = (( ref $x eq q(CODE)) ? ( scalar $x->($o)) : ( map {(( ref $x eq q(HASH)) ? do { my ($k,$v) = (%$x);
 				(${$_||{}}{$k}[$v]) } : ( defined $x ) ? (${$_||[]}[$x]) : (${$_||{}}{$q}))} map {(( defined $n ) ? (${$_||[]}[$n]) : ($_))} ( $$o{$k}[$i] ))))) :
@@ -1313,6 +1314,12 @@ sub OUTPUT_EXTRA { my ($k,$i,$e,@o) = ((shift), ( int shift), ( map {( $_, ( map
 sub OUTPUT_PAD { my ($k,$i,$d) = ((shift), ( int shift), ( int shift )); ( map { my ($j) = ( $i + $_ );
 	[ 0, $k, $j, ( sub {(0+ @{ ${${(shift)||{}}{$k}||[]}[$j] || [] } )} ), (undef,undef), ( 1 ) ] } (($i > 0) ? ((1)..( &MIN(($d), ( SMX - $i )))) : ())) }
 
+# PATCH (CIX): Returns template for extraction of the LHCO object numbers {idx} of the constituents held in each pad slot of an object shelf
+# Enabled per shelf by the card option CIX:TRUE; columns CIX_jjj align with the native constituent count columns KEY_jjj; values are sorted and comma-joined
+sub OUTPUT_CIX { my ($k,$i,$e) = ((shift), ( int shift), (shift)); ((( $i > 0 ) and (( ${$$e{cix}||[]}[0] ) > 0 )) or ( return )); ( map { my ($j) = ( $i + $_ );
+	[ 0, q(cix), $j, ( sub { my ($c) = ( ${${(shift)||{}}{$k}||[]}[$j] ); (( ref $c eq q(ARRAY)) and ( @$c )) ?
+		[ sort { our ($a,$b); ( $a <=> $b ) } map {( $$_{idx} )} ( @$c ) ] : (undef) } ), (undef,undef), ( 1 ) ] } ((1)..( &MIN(( int ${$$e{pad}||[]}[0] ), ( SMX - $i ))))) }
+		
 # Returns template for extraction of requested kinematic components from a list of input lhco objects
 {; my ($n,$s); sub OUTPUT_OBJECT { my (%n); $s ||= do { $n = 1; +{ map {(($_)=>($n++))} ( qw( eta phi ptm mas ep0 ep1 ep2 ep3 dm1 dm2 )) }};
 	map { my ($q,$j,$x,$t) = ( @$_[0,1] ); map {[ $_, $q, $j, $x, $n{$q}++, ( $t or ${{ eta => 3, phi => 3 }}{$q} or 2 ), 1 ]}
