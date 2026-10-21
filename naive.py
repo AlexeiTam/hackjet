@@ -523,7 +523,7 @@ def SIFT(j_initial,thresholding=False, pT_threshold=0.0, eta_threshold=0.0):
 # functions for reading and writing: ROOT files <-> naive.MJets or other objects made from 4-momenta
 
 
-def JetReader(f1, treename):
+def JetReader(f1, treename, auto_index=True):
   """
   takes a .root file input of PYTHIA particles,
   returns a list of naive.MJet objects,
@@ -533,6 +533,8 @@ def JetReader(f1, treename):
   f1 = name of .root file;
     must contain E, px, py, pz columns for MJet inputs.
   treename = name of tree in .root file.
+  auto_index = setting; defaults to old setting (True); use False when user wants to set index on their own,
+    by presence of an "id" column in the .root file's jet tree
 
   returns a list of naive.MJet objects.
   """
@@ -545,8 +547,14 @@ def JetReader(f1, treename):
   py_array = tree["py"].array().to_numpy()
   pz_array = tree["pz"].array().to_numpy()
 
+  if auto_index:
+    constituent_ids = [[i] for i in range(len(E_array)) ]
+  elif auto_index == False:
+    constituent_ids = tree["id"].array().tolist()
+    print(f"Read: constituent ids:{constituent_ids}")
 
-  return [MJet(E_array[i], px_array[i], py_array[i], pz_array[i], [i]) for i in range(len(E_array))]
+
+  return [MJet(E_array[i], px_array[i], py_array[i], pz_array[i], constituent_ids[i]) for i in range(len(E_array))]
 
 
 def JetWriter(fname, outjets, outtree):

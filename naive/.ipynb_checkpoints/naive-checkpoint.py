@@ -84,7 +84,8 @@ class MJet:
     self.phi = wrap_phi(float(np.arctan2(self.py, self.px)))
 
     # Calculate mass, add tolerance (1e-6)for floating point issues
-    m_squared = self.E**2 - self.p**2
+    # m_squared = self.E**2 - self.p**2
+    m_squared = max(0, self.E**2 - self.p**2)
     if m_squared < 0 and np.isclose(m_squared, 0, atol=1e-6): # Treat small negative as zero
         self.m = 0.0
     else:
@@ -384,6 +385,8 @@ def d_ij_SIFT(j1, j2):
   """
 
   dm = ( (j1.E)*(j2.E) ) - ( (j1.px)*(j2.px) ) - ( (j1.py)*(j2.py) ) - ( (j1.pz)*(j2.pz))
+  
+  dm = 2*dm
 
   E_T_i_squared = j1.E**2 - j1.pz**2
   E_T_j_squared = j2.E**2 - j2.pz**2
@@ -424,7 +427,7 @@ def epsil_param(jet1, jet2):
 
   if d_AB >= 1: #isolate--promote to final state
     return 2
-  elif d_AB >= out_epsil: #drop
+  elif d_AB > out_epsil: #drop
     return 1
   else: #last remaining option: cluster
     return 0
@@ -484,11 +487,16 @@ def SIFT(j_initial,thresholding=False, pT_threshold=0.0, eta_threshold=0.0):
       final_jets.append(j_1)
       final_jets.append(j_2)
     elif cdi_condition == 1:
-      #drop the softest jet by pT, keep harder jet in the active pool
-      if j_1.pT >= j_2.pT:
-        active.pop(idx1)
-      else:
+      #drop the softest jet by E_T, keep harder jet in the active pool
+      
+      ET1 = (j_1.E)**2 - (j_1.pz)**2
+      ET2 = (j_2.E)**2 - (j_2.pz)**2
+      
+      if ET1 >= ET2:
         active.pop(idx2)
+      else:
+        active.pop(idx1)
+
     elif cdi_condition == 0:
       #cluster: combine both jets and add result to active pool
       active.pop(idx1)
@@ -515,7 +523,7 @@ def SIFT(j_initial,thresholding=False, pT_threshold=0.0, eta_threshold=0.0):
 # functions for reading and writing: ROOT files <-> naive.MJets or other objects made from 4-momenta
 
 
-def JetReader(f1, treename):
+def JetReader(f1, treename, auto_index=True):
   """
   takes a .root file input of PYTHIA particles,
   returns a list of naive.MJet objects,
@@ -525,6 +533,8 @@ def JetReader(f1, treename):
   f1 = name of .root file;
     must contain E, px, py, pz columns for MJet inputs.
   treename = name of tree in .root file.
+  auto_index = setting; defaults to old setting (True); use False when user wants to set index on their own,
+    by presence of an "id" column in the .root file's jet tree
 
   returns a list of naive.MJet objects.
   """
@@ -537,8 +547,14 @@ def JetReader(f1, treename):
   py_array = tree["py"].array().to_numpy()
   pz_array = tree["pz"].array().to_numpy()
 
+  if auto_index:
+    constituent_ids = [[i] for i in range(len(E_array)) ]
+  elif auto_index == False:
+    constituent_ids = tree["id"].array().tolist()
+    print(f"Read: constituent ids:{constituent_ids}")
 
-  return [MJet(E_array[i], px_array[i], py_array[i], pz_array[i], [i]) for i in range(len(E_array))]
+
+  return [MJet(E_array[i], px_array[i], py_array[i], pz_array[i], constituent_ids[i]) for i in range(len(E_array))]
 
 
 def JetWriter(fname, outjets, outtree):

@@ -1,5 +1,5 @@
 """
-OutCompare: to handle comparisons of .root outputs between naive and SIFT (from aeacus.pl);
+FourMomentumCompare: to handle comparisons of .root outputs between naive and SIFT (from aeacus.pl);
 each containing the 4-momenta of final-state clustered jets
 
 current mechanism:
