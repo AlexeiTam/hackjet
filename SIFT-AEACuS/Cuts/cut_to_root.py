@@ -252,7 +252,7 @@ def read_cut_four_momenta(
 
 
 E_array, px_array, py_array, pz_array, constituents = (
-    read_cut_four_momenta("testing-output_003.cut", read_constituents=True)
+    read_cut_four_momenta("testing-output_006.cut", read_constituents=True)
 )    #collecting read 4-momenta components and constituent lists for writing to .root
 
 four_momenta = np.column_stack(
@@ -268,7 +268,7 @@ import naive
 outjets = [naive.MJet(E_array[i], px_array[i], py_array[i], pz_array[i], constituents[i]) for i in range(len(E_array))]    
 #collection of read final-state jets
 
-naive.JetWriter("aeacus_SIFT.root", outjets, "finalJets")
+naive.JetWriter("aeacus_SIFT_withconstituents.root", outjets, "finalJets")
 
 
 
