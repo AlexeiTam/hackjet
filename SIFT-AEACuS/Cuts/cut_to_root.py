@@ -245,7 +245,7 @@ def read_cut_four_momenta(
                 f"JET_{shelf_number:03d} = {raw_njets} jets, but {len(E_values)} were read; widen the card's OUT ranges."
             )
 
-        return (four_momenta, constituents)
+        return (*four_momenta, constituents)
 
     return four_momenta
 
