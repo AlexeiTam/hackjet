@@ -189,6 +189,59 @@ class DistHeap:
 
     self.place_in_i(i, x, p) #break: can place x in slot i while satisfying heap conditions
 
+
+  def updating_heap(self, x, s, pair):
+    """
+    Want to update the heap entry H[s] corresponding to <pair>, to value <x>.
+    Depending on whether <x> is bigger or smaller than value it is replacing in H[s],
+      will need to shiftdown or shiftup.
+    """
+
+    old_entry, self.H[s] = self.H[s], x
+
+    H = self.H
+    Pairs = self.Pairs
+
+    x = H[s]
+    p = Pairs[s]
+
+    if (x > old_entry):
+      self.shiftdown(s, self.e)
+    elif (x < old_entry):
+      self.shiftup(s)
+
+
+
+  def remove_from_heap(s):
+    """
+    want to remove an element H[s] from heap, by exchanging it with last element of heap and
+    shifting up or down as necessary
+    """
+
+    e = self.e
+    x = self.H[s]
+
+    self.place_in_i(s, self.H[e], self.Pairs[e]) # will move last element to 
+
+    self.e = e - 1
+
+    if s <= self.e:
+
+      if x < self.H[s]:
+        self.shiftdown(s, self.e)
+      if x > self.H[s]:
+        self.shiftup(s)
+
+
+
+  def top(self):
+    """
+    easily access minimal distance and its corresponding pair, H[1] and Pairs[1]
+    """
+
+    return self.H[1], self.Pairs[1]
+    
+
     
 
       
