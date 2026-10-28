@@ -15,7 +15,14 @@ new class: DistHeap
                       the distance in DistHeap slot <dh_i> corresponds
 
   Where:
-        Where[a_i, a_j] - 
+        Where[a_i, a_j] - list of indices b, such that d_ij(j_i,j_j) = H[b]
+
+
+
+
+############ NOTE TO SELF: Heap and Pairs must be sync'ed flawlessly and independently
+
+
 
 
 ############!!!! Decide what to do for Pair#################
@@ -55,8 +62,6 @@ shift_up: x,p.i
 
 """
 
- 
-import naive
   
 class DistHeap:
 
@@ -76,17 +81,20 @@ class DistHeap:
 
       H:  -- the "heap" itself
           -- 1-indexed; from H[1], ..., H[e] (going to stick a [None] at the beginning, that shouldn't be considered)
+          -- i.e, H[i] = d_ij(j_a, j_b) where j_a, j_b are jets (naive.MJet)
           -- must satisfy:
               * H[i] <= H[2i]; H[i] <= H[2i+1] for i = 1,...,e//2
 
       Pairs:  -- the "Pairs" list;
               -- Pairs[i] identifies the pair of jets whose pairwise distance is in H slot [i]
+              -- i.e., Pairs[i] = [j_a.id, j_b.id] (same j_a, j_b of H[i] above)
               -- does identifying by list of naive.MJet.ids
       
       Where:  -- the "Where" list:
               -- Where([idx1, idx2]) identifies the slot i in H, whose pairwise distance comes from d_ij(j_a,j_b)
               where j_a.id = idx1, j_b.id = idx2
-              -- need to somehow make it order independent, both within idx's, and within the input pair [idx1,idx2]
+              -- reverse of the Pairs mapping;
+              -- as it remains, a preliminary implementation
     """
     
     self.e = len(dists) #length of the heap
@@ -240,6 +248,24 @@ class DistHeap:
     """
 
     return self.H[1], self.Pairs[1]
+
+
+
+
+
+def HeapFiller(clustering_objects, distance_function):
+  distlist = []
+  pairlist = []
+  for i in range(len(clustering_objects)):
+    j_a = clustering_objects[i]
+    for j in range(i+1, len(clustering_objects)):
+      j_b = clustering_objects[j]
+      pairlist.append([j_a,j_b])
+      distlist.append(distance_function())
+
+def heap_clustering(objects):
+
+  
     
 
     
