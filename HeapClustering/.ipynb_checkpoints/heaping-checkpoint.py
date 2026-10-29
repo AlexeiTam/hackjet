@@ -109,15 +109,16 @@ class DistHeap:
     for i in range(len(clustering_objects)):
       for j in range(i+1, len(clustering_objects)):
         pairlists.append([clustering_objects[i], clustering_objects[j]])
-        distlists.append(pairwise_distance)
+        distlists.append(pairwise_distance(clustering_objects[i], clustering_objects[j]))
 
     self.H = [None] + distlists
     self.Pairs = [None] + pairlists
 
-    s = (len(dists) ) // 2 + 1
+    s = (len(distlists) ) // 2 + 1
     while (s > 1):
       s -= 1
-      self.shiftdown(s,len(dists)) #start evaluating from the lowest end of the tree back upwards
+      self.shiftdown(s,len(distlists)) #start evaluating from the lowest end of the tree back upwards
+    print(f"heap constructed, with {len(clustering_objects)} inputs, {len(self.H)} many heap entries, {len(self.Pairs)} many pairs")
 
   def where_locator(self, p):
     """
@@ -139,6 +140,20 @@ class DistHeap:
     output = pairs_id_listing.index(pair_identifier)
     return output
 
+  def jet_locator(self, jet):
+    """
+    the same as where_locator, but instead returns a list of indices where <jet> is located in heap
+    i.e., if jet = j_a, then returns indices = [i where H[i] = d_ij(j_a, ...)]
+    """
+
+    jet_ID = set(jet.id)
+    pairs_id_listing = [set(j_1.id + j_2.id) for [j_1,j_2] in self.Pairs]
+
+    output = [i for i,x in enumerate(pairs_id_listing) if jet_ID.issubset(x)]
+
+    return output
+
+    
   
   def place_in_i(self, i, x, p):
     """
@@ -147,7 +162,6 @@ class DistHeap:
     """
     self.H[i] = x
     self.Pairs[i] = p
-    self.Where[i] = i
 
   def shiftdown(self, s, e):
     """
@@ -189,7 +203,7 @@ class DistHeap:
       
       #not break -- x needs to move down, so child takes its place as it is smaller
       #child moves up to take up hole left once swap is made
-      self.place_in_i(i, H[j], Pair[j])
+      self.place_in_i(i, H[j], Pairs[j])
 
       #move down a generation:
       i = j
@@ -284,19 +298,22 @@ class DistHeap:
 
 
 
+def hac(event_objects, pair_dist_func):
 
+  """
+  Heap-based Agglomerative Clustering: again based on Kurita outline for agglomerative clustering algorithm
 
-def HeapFiller(clustering_objects, distance_function):
-  distlist = []
-  pairlist = []
-  for i in range(len(clustering_objects)):
-    j_a = clustering_objects[i]
-    for j in range(i+1, len(clustering_objects)):
-      j_b = clustering_objects[j]
-      pairlist.append([j_a,j_b])
-      distlist.append(distance_function())
+  inputs:
 
-def heap_clustering(objects):
+  event_objects (list) - list of input particles to be clustered; expected to be naive.MJet objects
+
+  pair_dist_func (function) - function of two jets j_a, j_b from event_objects, that determines pairwise distance btwn them
+  
+  """
+
+  distHeap = DistHeap(event_objects, pair_dist_func)
+
+  
 
   
     
