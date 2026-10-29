@@ -65,7 +65,7 @@ shift_up: x,p.i
   
 class DistHeap:
 
-  def __init__(self, dists, ids):
+  def __init__(self, clustering_objects, pairwise_distance):
     """
     A heap-based alternative to the matrix-based method of earlier iterations in <naive.py>,
       based on Kurita paper, proposing an efficient, agglomerative clustering algorithm with a heap
@@ -73,40 +73,73 @@ class DistHeap:
     
     Accepts:
 
-    dists (list) -- list of pairwise distances, between pairs of "active" clusters
-                  i.e., dist[i] = d_ij(j_a, j_b)
-    ids (list) -- list of naive.MJet.id of each pair, with ids[i] = [j_a.id, j_b.id]; same j_a & j_b of dist[i]
+    clustering_objects (list/array) = list or array of objects that are to be clustered;
+
+    pairwise_distance (function) = a function f(j_a, j_b) where j_a, j_b are in <clusering_objects>, 
+                                    and returns the "pairwise distance" between clusters j_a, j_b
     
-    DistHeap holds three key arrays:
+    DistHeap holds two key arrays:
 
       H:  -- the "heap" itself
           -- 1-indexed; from H[1], ..., H[e] (going to stick a [None] at the beginning, that shouldn't be considered)
-          -- i.e, H[i] = d_ij(j_a, j_b) where j_a, j_b are jets (naive.MJet)
+          -- i.e, H[i] = pairwise_distance(j_a, j_b) = d_ij (j_a,j_b) where j_a, j_b are jets (naive.MJet)
           -- must satisfy:
               * H[i] <= H[2i]; H[i] <= H[2i+1] for i = 1,...,e//2
 
       Pairs:  -- the "Pairs" list;
               -- Pairs[i] identifies the pair of jets whose pairwise distance is in H slot [i]
-              -- i.e., Pairs[i] = [j_a.id, j_b.id] (same j_a, j_b of H[i] above)
-              -- does identifying by list of naive.MJet.ids
+              -- i.e., Pairs[i] = [j_a, j_b] (same j_a, j_b of H[i] above)
+
+    In addition:
       
-      Where:  -- the "Where" list:
-              -- Where([idx1, idx2]) identifies the slot i in H, whose pairwise distance comes from d_ij(j_a,j_b)
-              where j_a.id = idx1, j_b.id = idx2
-              -- reverse of the Pairs mapping;
-              -- as it remains, a preliminary implementation
+      Where:  -- the "Where" in the original Kurita paper is an array of pointers, but here, it will be a function
+              -- "Pairs" and "Where" are to serve as reverse maps of each other;
+              -- "Where" will return the heap slot index i, to which pair p corresponds
+              -- i.e., if Pairs[i] = p, then Where(p) returns i.
     """
     
-    self.e = len(dists) #length of the heap
-    self.H = [None] + list(dists)
-    self.Pairs = [None] + ids
-    self.Where = [None] + list(range(1, len(dists) + 1))
+    # self.e = len(dists) #length of the heap
+    # self.H = [None] + list(dists)
+    # self.Pairs = [None] + ids
+    # self.Where = [None] + list(range(1, len(dists) + 1))
+
+    distlists = [] 
+    pairlists = []
+
+    for i in range(len(clustering_objects)):
+      for j in range(i+1, len(clustering_objects)):
+        pairlists.append([clustering_objects[i], clustering_objects[j]])
+        distlists.append(pairwise_distance)
+
+    self.H = [None] + distlists
+    self.Pairs = [None] + pairlists
 
     s = (len(dists) ) // 2 + 1
     while (s > 1):
       s -= 1
       self.shiftdown(s,len(dists)) #start evaluating from the lowest end of the tree back upwards
 
+  def where_locator(self, p):
+    """
+    serves role of "Where" from Kurita's heap paper;
+
+    input: p -- a list of two jets/clusters j_a, j_b = p[0], p[1]
+
+    must take in <p>, determine the heap slot <i> its pairwise distance is associated
+    i.e., if Pair[i] = p; then Where[p] = i
+
+    will identify where p = [j_a, j_b] are by matching naive.Mjet.ids (*assuming j_a, j_b are naive.MJet objects)
+    """
+    j_a = p[0]
+    j_b = p[1]
+    pair_identifier = set(j_a.id + j_b.id)
+
+    pairs_id_listing = [set(j_1.id+j_2.id) for [j_1,j_2] in self.Pairs]
+
+    output = pairs_id_listing.index(pair_identifier)
+    return output
+
+  
   def place_in_i(self, i, x, p):
     """
     inputs: i (int), x (float), p ( list( list, list ) )
