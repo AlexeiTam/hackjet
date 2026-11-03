@@ -19,28 +19,6 @@ new class: DistHeap
 
 
 
-
-############ NOTE TO SELF: Heap and Pairs must be sync'ed flawlessly and independently
-
-
-
-
-############!!!! Decide what to do for Pair#################
-
-
-Pair: do we still want to do indices?
-      do we want Pair elements to be tuples of the jets themselves?
-      do we want to treat this as a second index? We end up limiting communication with <naive>...
-        --for now, let's do this but index them the same way we index the input particles;
-        --so what, it's a tuple of jet index lists?
-        --there's a certain strength to this; not only can you identify each jet uniquely by the end,
-          but at every step of the process
-
-Where:
-  --can work with preliminary method; 
-  --note to self: can use list.index(value), even if value is a list like naive.MJet.id
-############################################################
-
 shift_down: x,p,i
 
   wants to insert x distance corresponding to pair p, into heap H slot i (at the root H[1] by default)
@@ -61,6 +39,10 @@ shift_up: x,p.i
 
 
 """
+
+#! important dependency: needs naive unless we plan on just importing the fuctions here...
+
+import naive
 
   
 class DistHeap:
@@ -113,6 +95,7 @@ class DistHeap:
 
     self.H = [None] + distlists
     self.Pairs = [None] + pairlists
+    self.e = len(distlists) + 1
 
     s = (len(distlists) ) // 2 + 1
     while (s > 1):
@@ -168,7 +151,14 @@ class DistHeap:
 
     if setting == "single":
       print("will return heap_slot, other_jet: the slot where the first instance of this jet occurs in heap, and the other jet in the pairing where the input jet first occurs")
+      #is the jet even still there?
+        #if not, return None
+
+      if len([i for i,x in enumerate(pairs_id_listing) if jet_ID.issubset(x)]) == 0:
+        return None, None
+
       
+      #jet is still there, let's keep going
       for i,x in enumerate(pairs_id_listing):
 
         if jet_ID.issubset(x):
@@ -295,7 +285,7 @@ class DistHeap:
 
 
 
-  def remove_from_heap(s):
+  def remove_from_heap(self,s):
     """
     want to remove an element H[s] from heap, by exchanging it with last element of heap and
     shifting up or down as necessary
@@ -304,13 +294,13 @@ class DistHeap:
     e = self.e
     x = self.H[s]
 
-    self.place_in_i(s, self.H[e], self.Pairs[e]) # will move last element to 
+    self.place_in_i(s, self.H[e-1], self.Pairs[e-1]) # will move last element to 
 
     self.e = e - 1
 
     #remove the elements to be removed
-    self.H.pop(self.e + 1)
-    self.Pairs.pop(self.e + 1)
+    self.H.pop(e-1)
+    self.Pairs.pop(e-1)
 
     #shift original end-element around to fix the heap
     if s <= self.e:
@@ -358,7 +348,7 @@ def hac(event_objects, pair_dist_func):
   
     final_jets = []
   
-    cdi_condition = epsil_param(MinPairing[0], MinPairing[1])
+    cdi_condition = naive.epsil_param(MinPairing[0], MinPairing[1])
   
     if cdi_condition == 2:
       #isolate: need to append both jets into the final_state, remove all instances of the jet
@@ -377,6 +367,11 @@ def hac(event_objects, pair_dist_func):
 
       for j2_idx in j2_locations:
         distHeap.remove_from_heap(j2_idx)
+
+      #append the promoted jets to final state
+      final_jets.append(MinPairing[0])
+      final_jets.append(MinPairing[1])
+      
     elif cdi_condition == 1:
       #drop: need to drop softest jet (in terms of E_T)
       ET1 = (MinPairing[0].E)**2 - (MinPairing[1].pz)**2 #really E_T^1 squared;
@@ -404,6 +399,23 @@ def hac(event_objects, pair_dist_func):
         distHeap.remove_from_heap(j2_idx)
 
       #will update j1 to new_merged, update distance elements
+      j1_locations, pairingjet = distHeap.jet_locator(MinPairing[0], "single")
+
+      while j1_locations is not None:
+          
+          #now, find first instance in heap where j1 occurs (in <j1_locations>)
+
+          #go to heap, update:
+
+        distHeap.updating_heap(naive.d_ij_SIFT(new_merged, pairingjet), j1_locations, [new_merged, pairingjet])
+          
+          #at end, do j1_locations recalc.
+        j1_locations, pairingjet = distHeap.jet_locator(MinPairing[0], "single")
+
+
+  #clustering complete: can safely return the final state jet list
+
+  return final_jets
         
       
 
