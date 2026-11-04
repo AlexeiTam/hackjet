@@ -95,7 +95,7 @@ class DistHeap:
 
     self.H = [None] + distlists
     self.Pairs = [None] + pairlists
-    self.e = len(distlists) + 1
+    self.e = len(distlists)
 
     s = (len(distlists) ) // 2 + 1
     while (s > 1):
@@ -139,6 +139,13 @@ class DistHeap:
       designed for "update" action; will just return <>
     """
 
+    if setting == "single":
+      for i in range(1, len(self.Pairs)):
+        a, b = self.Pairs[i]
+        if a is jet: return i, b
+        if b is jet: return i, a
+      return None, None
+
     jet_ID = set(jet.id)
     pairs_id_listing = [set(j_1.id + j_2.id) for [j_1,j_2] in self.Pairs[1:]]
 
@@ -146,27 +153,28 @@ class DistHeap:
     # return output
 
     if setting == "all":
-      print("searching for all indices of given jet...")
-      return [i for i,x in enumerate(pairs_id_listing) if jet_ID.issubset(x)]
+      #print("searching for all indices of given jet...")
+      return [i for i,x in enumerate(pairs_id_listing, start=1) if jet_ID.issubset(x)]
 
-    if setting == "single":
-      print("will return heap_slot, other_jet: the slot where the first instance of this jet occurs in heap, and the other jet in the pairing where the input jet first occurs")
-      #is the jet even still there?
-        #if not, return None
+    #old, defunct method for "single" setting
+    # if setting == "single":
+    #   #print("will return heap_slot, other_jet: the slot where the first instance of this jet occurs in heap, and the other jet in the pairing where the input jet first occurs")
+    #   #is the jet even still there?
+    #     #if not, return None
 
-      if len([i for i,x in enumerate(pairs_id_listing) if jet_ID.issubset(x)]) == 0:
-        return None, None
+    #   if len([i for i,x in enumerate(pairs_id_listing, start=1) if jet_ID.issubset(x)]) == 0:
+    #     return None, None
 
       
-      #jet is still there, let's keep going
-      for i,x in enumerate(pairs_id_listing):
+    #   #jet is still there, let's keep going
+    #   for i,x in enumerate(pairs_id_listing, start=1):
 
-        if jet_ID.issubset(x):
-          heap_slot = i #the heap slot where jet's first associated distance, first pairing in self.H and self.Pairs
+    #     if jet_ID.issubset(x):
+    #       heap_slot = i #the heap slot where jet's first associated distance, first pairing in self.H and self.Pairs
 
-          for jet_cand in self.Pairs[heap_slot]:
-            if jet_cand.id != jet.id:
-              return heap_slot, jet_cand
+    #       for jet_cand in self.Pairs[heap_slot]:
+    #         if jet_cand.id != jet.id:
+    #           return heap_slot, jet_cand
 
           
         
@@ -272,11 +280,14 @@ class DistHeap:
 
     old_entry, self.H[s] = self.H[s], x
 
-    H = self.H
-    Pairs = self.Pairs
+    # H = self.H
+    # Pairs = self.Pairs
 
-    x = H[s]
-    p = Pairs[s]
+    # x = H[s]
+    # p = Pairs[s]
+    
+    self.H[s] = x
+    self.Pairs[s] = pair #plugging in new pair into appropriate slot
 
     if (x > old_entry):
       self.shiftdown(s, self.e)
@@ -294,13 +305,13 @@ class DistHeap:
     e = self.e
     x = self.H[s]
 
-    self.place_in_i(s, self.H[e-1], self.Pairs[e-1]) # will move last element to 
+    self.place_in_i(s, self.H[e], self.Pairs[e]) # will move last element to take the place of removed element
 
     self.e = e - 1
 
     #remove the elements to be removed
-    self.H.pop(e-1)
-    self.Pairs.pop(e-1)
+    self.H.pop()
+    self.Pairs.pop()
 
     #shift original end-element around to fix the heap
     if s <= self.e:
@@ -312,7 +323,14 @@ class DistHeap:
 
     
 
-
+  # new simpler method to remove jet using remove_from_heap
+  def remove_jet(self, jet):
+    while True:
+      i, blank = self.jet_locator(jet, "single")
+      if i is None: 
+        return
+      self.remove_from_heap(i)
+    
 
   def top(self):
     """
@@ -339,34 +357,44 @@ def hac(event_objects, pair_dist_func):
   #construct heap with given list of objects for clustering, and a function to determine distance
   distHeap = DistHeap(event_objects, pair_dist_func)
 
-  while (distHeap.e > 1):
+  #final state jets
+  final_jets = []
+  while (distHeap.e >= 1):
     #need to find "top" of the heap, pluck out its distance and the pair within it
     MinDist, MinPairing = distHeap.top()
+
+    #status message print
+    print(f"next iteration; {distHeap.e} heap slots remaining...")
   
     #first, determine course of action using naive.epsil_param(j1,j2)
     # 0 -- Merge; 1 -- Drop (the softer jet); 2 -- Isolate (both jets to final state)
-  
-    final_jets = []
   
     cdi_condition = naive.epsil_param(MinPairing[0], MinPairing[1])
   
     if cdi_condition == 2:
       #isolate: need to append both jets into the final_state, remove all instances of the jet
+      print("isolating two jets to final state...")
       #remove first jet:
 
-      j1_locations = distHeap.jet_locator(MinPairing[0], "all")
-      j1_locations.reverse()
+      #stale, involved jet removal method
+      # j1_locations = distHeap.jet_locator(MinPairing[0], "all")
+      # j1_locations.reverse()
 
-      for j1_idx in j1_locations:
-        distHeap.remove_from_heap(j1_idx)
+      # for j1_idx in j1_locations:
+      #   distHeap.remove_from_heap(j1_idx)
+
+      distHeap.remove_jet(MinPairing[0])
 
       #remove second jet
 
-      j2_locations = distHeap.jet_locator(MinPairing[1], "all")
-      j2_locations.reverse()
+      #stale removal method
+      # j2_locations = distHeap.jet_locator(MinPairing[1], "all")
+      # j2_locations.reverse()
 
-      for j2_idx in j2_locations:
-        distHeap.remove_from_heap(j2_idx)
+      # for j2_idx in j2_locations:
+      #   distHeap.remove_from_heap(j2_idx)
+
+      distHeap.remove_jet(MinPairing[1])
 
       #append the promoted jets to final state
       final_jets.append(MinPairing[0])
@@ -374,7 +402,8 @@ def hac(event_objects, pair_dist_func):
       
     elif cdi_condition == 1:
       #drop: need to drop softest jet (in terms of E_T)
-      ET1 = (MinPairing[0].E)**2 - (MinPairing[1].pz)**2 #really E_T^1 squared;
+      print("dropping one jet...")
+      ET1 = (MinPairing[0].E)**2 - (MinPairing[0].pz)**2 #really E_T^1 squared;
       ET2 = (MinPairing[1].E)**2 - (MinPairing[1].pz)**2
 
       if ET1 < ET2:
@@ -382,21 +411,28 @@ def hac(event_objects, pair_dist_func):
       else:
         dropjet = MinPairing[1]
 
-      dropjet_locations = distHeap.jet_locator(dropjet, "all")
-      dropjet_locations.reverse()
+      #stale removal method
+      # dropjet_locations = distHeap.jet_locator(dropjet, "all")
+      # dropjet_locations.reverse()
 
-      for dj_idx in dropjet_locations:
-        distHeap.remove_from_heap(dj_idx)
+      # for dj_idx in dropjet_locations:
+      #   distHeap.remove_from_heap(dj_idx)
+      distHeap.remove_jet(dropjet)
+
+      
     elif cdi_condition == 0:
       #cluster: merge the two jets, remove one of them, then update elems of another
+      print("clustering two jets...")
       new_merged = MinPairing[0] + MinPairing[1]
 
       #will remove j2:
-      j2_locations = distHeap.jet_locator(MinPairing[1], "all")
-      j2_locations.reverse()
+      # stale removal method
+      # j2_locations = distHeap.jet_locator(MinPairing[1], "all")
+      # j2_locations.reverse()
 
-      for j2_idx in j2_locations:
-        distHeap.remove_from_heap(j2_idx)
+      # for j2_idx in j2_locations:
+      #   distHeap.remove_from_heap(j2_idx)
+      distHeap.remove_jet(MinPairing[1])
 
       #will update j1 to new_merged, update distance elements
       j1_locations, pairingjet = distHeap.jet_locator(MinPairing[0], "single")
