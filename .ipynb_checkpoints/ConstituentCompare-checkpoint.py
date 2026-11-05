@@ -12,7 +12,8 @@ import naive
 #collecting final-state jets from naive, aeacus outputs
 
 #assuming this script is being run right in the hackjet repository:
-naive_jets = naive.JetReader("naive/naive_SIFT.root", "finalJets", auto_index=False)
+#naive_jets = naive.JetReader("naive/naive_SIFT.root", "finalJets", auto_index=False)
+naive_jets = naive.JetReader("HeapClustering/heapjets.root", "finalJets", auto_index=False) #just reusing pre-existing code for naive-aeacus comparison, now for heap-aeacus comparison
 aeacus_jets = naive.JetReader("SIFT-AEACuS/Cuts/aeacus_SIFT_withconstituents.root", "finalJets", auto_index=False)
 
 #First key test: do we even end up with same number of jets
