@@ -45,11 +45,12 @@ shift_up: x,p.i
 import naive
 import time 
 
-def jet_key():
+def jet_key(a,b):
   """
-  Will use sets as identifiers for jets and pairs of jets.  Using frozensets as keys for <Where> dict
+  Will use sets as identifiers for jets and pairs of jets.  Using frozensets as keys for <Where> dict;
+  immutability of frozenset allows for use as key in dicts
   """
-  return 
+  return frozenset([a.id + b.id])
 
   
 class DistHeap:
@@ -81,16 +82,13 @@ class DistHeap:
 
     In addition:
       
-      Where:  -- the "Where" in the original Kurita paper is an array of pointers, but here, it will be a function
+      Where: 
               -- "Pairs" and "Where" are to serve as reverse maps of each other;
-              -- "Where" will return the heap slot index i, to which pair p corresponds
+              -- "Where" will return the heap slot index i, to which pair/jet p corresponds
+                  -- if trying to locate jet, needs to check if set(jet.id) is a subset of corresponding Where element,
+                  as opposed to if the two sets match
               -- i.e., if Pairs[i] = p, then Where(p) returns i.
     """
-    
-    # self.e = len(dists) #length of the heap
-    # self.H = [None] + list(dists)
-    # self.Pairs = [None] + ids
-    # self.Where = [None] + list(range(1, len(dists) + 1))
 
     distlists = [] 
     pairlists = []
@@ -100,9 +98,11 @@ class DistHeap:
         pairlists.append([clustering_objects[i], clustering_objects[j]])
         distlists.append(pairwise_distance(clustering_objects[i], clustering_objects[j]))
 
+    self.e = len(distlists)
     self.H = [None] + distlists
     self.Pairs = [None] + pairlists
-    self.e = len(distlists)
+    self.Where = {jet_key(*self.Pairs[i]: i for i in range(1, len(distlists) + 1))}
+    self.active = {frozenset(j.id): j for j in clustering_objects}#a full list of all of the 'active' jets still being clustered; equivalent to similarly named list from naive.SIFT
 
     s = (len(distlists) ) // 2 + 1
     while (s > 1):
@@ -195,6 +195,7 @@ class DistHeap:
     """
     self.H[i] = x
     self.Pairs[i] = p
+    self.Where[jet_key(*p)] = i
 
   def shiftdown(self, s, e):
     """
@@ -294,7 +295,9 @@ class DistHeap:
     # p = Pairs[s]
     
     self.H[s] = x
+    del self.Where[jet_key(*self.Pairs[s])]  #remove old pair
     self.Pairs[s] = pair #plugging in new pair into appropriate slot
+    self.Where[jet_key(*pair)] = s #setting 'Where' of new pair
 
     if (x > old_entry):
       self.shiftdown(s, self.e)
@@ -309,6 +312,7 @@ class DistHeap:
     shifting up or down as necessary
     """
 
+    leavingpairkey = jet_key(*self.Pairs[s]) #ID of pair that is being removed
     e = self.e
     x = self.H[s]
 
@@ -319,6 +323,7 @@ class DistHeap:
     #remove the elements to be removed
     self.H.pop()
     self.Pairs.pop()
+    del self.Where[leavingpairkey]
 
     #shift original end-element around to fix the heap
     if s <= self.e:
@@ -332,11 +337,23 @@ class DistHeap:
 
   # new simpler method to remove jet using remove_from_heap
   def remove_jet(self, jet):
-    while True:
-      i, blank = self.jet_locator(jet, "single")
-      if i is None: 
-        return
-      self.remove_from_heap(i)
+    """
+    Removes all instances of <jet> from heap;
+    from the pairwise distances it is involved in, in the H;
+    the pairs it is a part of in Pairs,
+    and from the Where and active dicts
+
+    """
+    # while True:
+    #   i, blank = self.jet_locator(jet, "single")
+    #   if i is None: 
+    #     return
+    #   self.remove_from_heap(i)  #past iteration with inefficient jet_locator method
+    
+    for k in list(self.active.values()):
+      if k is not jet:
+        self.remove_from_heap(self.Where[jet_key(jet, k)])
+    del self.active(frozenset(jet.id))
     
 
   def top(self):
@@ -458,18 +475,30 @@ def hac(event_objects, pair_dist_func, timing=True):
       distHeap.remove_jet(MinPairing[1])
 
       #will update j1 to new_merged, update distance elements
-      j1_locations, pairingjet = distHeap.jet_locator(MinPairing[0], "single")
+      #another deprecated method;
+      # j1_locations, pairingjet = distHeap.jet_locator(MinPairing[0], "single")
 
-      while j1_locations is not None:
+      # while j1_locations is not None:
           
-          #now, find first instance in heap where j1 occurs (in <j1_locations>)
+      #     #now, find first instance in heap where j1 occurs (in <j1_locations>)
 
-          #go to heap, update:
+      #     #go to heap, update:
 
-        distHeap.updating_heap(naive.d_ij_SIFT(new_merged, pairingjet), j1_locations, [new_merged, pairingjet])
+      #   distHeap.updating_heap(naive.d_ij_SIFT(new_merged, pairingjet), j1_locations, [new_merged, pairingjet])
           
-          #at end, do j1_locations recalc.
-        j1_locations, pairingjet = distHeap.jet_locator(MinPairing[0], "single")
+      #     #at end, do j1_locations recalc.
+      #   j1_locations, pairingjet = distHeap.jet_locator(MinPairing[0], "single")
+
+      #will update j1 to new_merged, update distance elements
+      for k in list(self.active.values()):
+        if k is MinPairing[0]:
+          continue
+        s = distHeap.Where[jet_key(MinPairing[0], k)] #found k that isn't j1; need to find where this unique j1,k pairing is
+        distHeap.updating_heap(naive.d_ij_SIFT(new_merged, k), s, [new_merged, k]) #replacing distance d_ij(j1, k) --> d_ij
+
+      #replace j1 with new_merged in active pool
+      del distHeap.active[frozenset(MinPairing[0].id)]
+      distHeap.active[new_merged.id] = new_merged
 
 
   #clustering complete: can safely return the final state jet list
