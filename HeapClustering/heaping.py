@@ -43,6 +43,13 @@ shift_up: x,p.i
 #! important dependency: needs naive unless we plan on just importing the fuctions here...
 
 import naive
+import time 
+
+def jet_key():
+  """
+  Will use sets as identifiers for jets and pairs of jets.  Using frozensets as keys for <Where> dict
+  """
+  return 
 
   
 class DistHeap:
@@ -341,21 +348,37 @@ class DistHeap:
 
 
 
-def hac(event_objects, pair_dist_func):
+def hac(event_objects, pair_dist_func, timing=True):
 
   """
   Heap-based Agglomerative Clustering: again based on Kurita outline for agglomerative clustering algorithm
 
   inputs:
 
-  event_objects (list) - list of input particles to be clustered; expected to be naive.MJet objects
+    event_objects (list) - list of input particles to be clustered; expected to be naive.MJet objects
 
-  pair_dist_func (function) - function of two jets j_a, j_b from event_objects, that determines pairwise distance btwn them
+    pair_dist_func (function) - function of two jets j_a, j_b from event_objects, that determines pairwise distance btwn them
+
+    timing (bool) - a new setting, to ask function to also measure time it takes to complete clustering process;
+
+  returns:
+
+    final_jets (list) - list of final-state jets once all clustering is done
+
+    dt (float) - time in seconds it takes to complete clustering process
+
+    
   
   """
 
+
+  #start the clock 
+  t_start = time.perf_counter()
+  
   #construct heap with given list of objects for clustering, and a function to determine distance
   distHeap = DistHeap(event_objects, pair_dist_func)
+
+  
 
   #final state jets
   final_jets = []
@@ -451,7 +474,14 @@ def hac(event_objects, pair_dist_func):
 
   #clustering complete: can safely return the final state jet list
 
-  return final_jets
+  #end the clock
+  t_end = time.perf_counter()
+  dt = t_end - t_start
+
+  if timing:
+    return final_jets, dt
+  else:
+    return final_jets
         
       
 
