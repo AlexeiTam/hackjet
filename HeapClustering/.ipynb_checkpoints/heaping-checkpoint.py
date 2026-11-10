@@ -50,7 +50,7 @@ def jet_key(a,b):
   Will use sets as identifiers for jets and pairs of jets.  Using frozensets as keys for <Where> dict;
   immutability of frozenset allows for use as key in dicts
   """
-  return frozenset([a.id + b.id])
+  return frozenset(a.id + b.id)
 
   
 class DistHeap:
@@ -101,7 +101,7 @@ class DistHeap:
     self.e = len(distlists)
     self.H = [None] + distlists
     self.Pairs = [None] + pairlists
-    self.Where = {jet_key(*self.Pairs[i]: i for i in range(1, len(distlists) + 1))}
+    self.Where = {jet_key(*self.Pairs[i]): i for i in range(1, len(distlists) + 1)}
     self.active = {frozenset(j.id): j for j in clustering_objects}#a full list of all of the 'active' jets still being clustered; equivalent to similarly named list from naive.SIFT
 
     s = (len(distlists) ) // 2 + 1
@@ -353,7 +353,7 @@ class DistHeap:
     for k in list(self.active.values()):
       if k is not jet:
         self.remove_from_heap(self.Where[jet_key(jet, k)])
-    del self.active(frozenset(jet.id))
+    del self.active[frozenset(jet.id)]
     
 
   def top(self):
@@ -490,7 +490,7 @@ def hac(event_objects, pair_dist_func, timing=True):
       #   j1_locations, pairingjet = distHeap.jet_locator(MinPairing[0], "single")
 
       #will update j1 to new_merged, update distance elements
-      for k in list(self.active.values()):
+      for k in list(distHeap.active.values()):
         if k is MinPairing[0]:
           continue
         s = distHeap.Where[jet_key(MinPairing[0], k)] #found k that isn't j1; need to find where this unique j1,k pairing is
@@ -498,7 +498,7 @@ def hac(event_objects, pair_dist_func, timing=True):
 
       #replace j1 with new_merged in active pool
       del distHeap.active[frozenset(MinPairing[0].id)]
-      distHeap.active[new_merged.id] = new_merged
+      distHeap.active[frozenset(new_merged.id)] = new_merged
 
 
   #clustering complete: can safely return the final state jet list
