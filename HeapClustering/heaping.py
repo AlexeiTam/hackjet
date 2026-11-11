@@ -404,7 +404,7 @@ def hac(event_objects, pair_dist_func, timing=True):
     MinDist, MinPairing = distHeap.top()
 
     #status message print
-    print(f"next iteration; {distHeap.e} heap slots remaining...")
+    #print(f"next iteration; {distHeap.e} heap slots remaining...")
   
     #first, determine course of action using naive.epsil_param(j1,j2)
     # 0 -- Merge; 1 -- Drop (the softer jet); 2 -- Isolate (both jets to final state)
@@ -413,7 +413,7 @@ def hac(event_objects, pair_dist_func, timing=True):
   
     if cdi_condition == 2:
       #isolate: need to append both jets into the final_state, remove all instances of the jet
-      print("isolating two jets to final state...")
+      #print("isolating two jets to final state...")
       #remove first jet:
 
       #stale, involved jet removal method
@@ -442,7 +442,7 @@ def hac(event_objects, pair_dist_func, timing=True):
       
     elif cdi_condition == 1:
       #drop: need to drop softest jet (in terms of E_T)
-      print("dropping one jet...")
+      #print("dropping one jet...")
       ET1 = (MinPairing[0].E)**2 - (MinPairing[0].pz)**2 #really E_T^1 squared;
       ET2 = (MinPairing[1].E)**2 - (MinPairing[1].pz)**2
 
@@ -462,7 +462,7 @@ def hac(event_objects, pair_dist_func, timing=True):
       
     elif cdi_condition == 0:
       #cluster: merge the two jets, remove one of them, then update elems of another
-      print("clustering two jets...")
+      #print("clustering two jets...")
       new_merged = MinPairing[0] + MinPairing[1]
 
       #will remove j2:
